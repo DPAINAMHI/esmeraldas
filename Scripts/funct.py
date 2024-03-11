@@ -2,7 +2,8 @@ import datetime
 import netCDF4 as nc
 import numpy as np
 import pandas as pd
-
+from datetime import date, timedelta
+import os
 
 def create_time_series_dataframe(interval, rela_path):
   """
@@ -19,7 +20,7 @@ def create_time_series_dataframe(interval, rela_path):
   with nc.Dataset(rela_path) as ds:
     base_time_str = ds.variables['datetime'].units
     parts = base_time_str.split("since")
-    base_time = datetime.datetime.strptime(parts[1].strip(), "%Y-%m-%d %H:%M")
+    base_time = datetime.datetime.strptime(parts[1].strip(), "%Y-%m-%d %H")
     n_time = ds.variables['datetime'].shape[0]
 
     timestamps = [base_time + i * datetime.timedelta(hours=interval) for i in range(n_time)]
@@ -32,5 +33,34 @@ def create_time_series_dataframe(interval, rela_path):
     df = pd.DataFrame(data_reshaped, index=timestamps)
 
   return df
+
+
+
+def iterate_months(start_year, start_month, end_year, end_month):
+  """
+  Iterates through months from a start date to an end date, returning formatted strings (YYYYMM).
+
+  Args:
+      start_year (int): Starting year (e.g., 2019).
+      start_month (int): Starting month (1-12).
+      end_year (int): Ending year (e.g., 2024).
+      end_month (int): Ending month (1-12).
+
+  Yields:
+      str: Formatted month string (YYYYMM).
+  """
+
+  current_year = start_year
+  current_month = start_month
+
+  while (current_year, current_month) <= (end_year, end_month):
+    formatted_month = f"{current_year:04d}{current_month:02d}"
+    yield formatted_month  # Use yield for iteration
+
+    if current_month == 12:
+      current_month = 1
+      current_year += 1
+    else:
+      current_month += 1
 
 
