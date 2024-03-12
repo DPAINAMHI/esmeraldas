@@ -4,6 +4,8 @@ import numpy as np
 import pandas as pd
 from datetime import date, timedelta
 import os
+import IPython
+
 
 def create_time_series_dataframe(interval, rela_path):
   """
@@ -34,8 +36,6 @@ def create_time_series_dataframe(interval, rela_path):
 
   return df
 
-
-
 def iterate_months(start_year, start_month, end_year, end_month):
   """
   Iterates through months from a start date to an end date, returning formatted strings (YYYYMM).
@@ -63,4 +63,28 @@ def iterate_months(start_year, start_month, end_year, end_month):
     else:
       current_month += 1
 
+def format_number_with_zeros(number, desired_digits):
+  """Formats a number with leading zeros to reach the desired number of digits.
 
+  Args:
+      number: The integer to format.
+      desired_digits: The desired number of digits in the output string.
+
+  Returns:
+      A string representation of the number with leading zeros if needed.
+  """
+
+  if not isinstance(number, int) or desired_digits <= 0:
+    raise ValueError("Invalid input: number must be an integer and desired_digits must be positive.")
+
+  # Convert the number to a string
+  number_str = str(number)
+
+  # Add leading zeros if needed
+  num_leading_zeros = desired_digits - len(number_str)
+  formatted_string = "0" * num_leading_zeros + number_str
+
+  return formatted_string
+
+
+  
