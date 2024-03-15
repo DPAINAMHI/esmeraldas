@@ -16,7 +16,7 @@ def create_time_series_dataframe(interval, rela_path):
       rela_path (str): Path to the NetCDF file.
 
   Returns:
-      pandas.DataFrame: A DataFrame containing timestamps as columns and data as rows.
+      pandas.DataFrame: A 1D DataFrame containing timestamps as columns and data as rows.
   """
 
   with nc.Dataset(rela_path) as ds:
