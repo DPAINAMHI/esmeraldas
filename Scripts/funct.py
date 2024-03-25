@@ -87,4 +87,9 @@ def format_number_with_zeros(number, desired_digits):
   return formatted_string
 
 
-  
+def diff(serie):
+  dif = serie.iloc[-1]-serie.iloc[0]
+  return dif
+def mmean(serie):
+  m = np.mean(serie)
+  return m
