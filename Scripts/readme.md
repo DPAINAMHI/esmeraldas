@@ -40,7 +40,8 @@ The input of the code for reading the historical Esmeraldas sensor data is just 
 The downloaded CCS data is pre-clipped, namely consisting of only the pixels of the esmeraldas river basin.
 According to the prescribed information associated with the downloaded data, the shape of the Esmeraldas river basin is $53\times52$. As part of the processing of the data, we flatted the data to be 1-dimensional and drop all the null pixels outside the actual basin shape. As the result, the net output shape of the CCS clipped data is $1\times 1098$.
 ## Output of the Esmeldas sensor data
-Since there are only 3 available sensors deployed in the Esmeraldas area, the output shape is simply three columns with each indicating the time series data from 3 sensors.
+Since there are only 3 available sensors deployed in the Esmeraldas area, the output shape is simply three columns with each indicating the time series data from 3 sensors with the exception from the date 2023/10/4 to 2023/10/21 when there is only one sensor working properly, which is the `hidro_level_m1`.
+And as of 2024/3/26, the data from 2023/09/01 to 2023/09/05 is still missing.
 Note that the orginal frequency of these 3 time series is 1 minute or 5 minutes. To be compatible with main CCS data, we aggregate/pivot the time series to change its frequency to be 3 hours. For the precipitaion data, the aggregation method is `diff`, namely get the difference between the observation of the last and first timestamps in the unit time. For the water level data, the aggregation method is averaging.
 The names of the aggregated columns are `hidro_level_m1`， `precip_acumu_sm`, `hidro_level_sm` accordingly indicating the average water level of Estación A - Muelle 1, precipitación acumulada of Estación B San Mateo and average water level of Estación B San Mateo.
 ## Final merged data
