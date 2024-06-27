@@ -5,6 +5,9 @@ import geopandas as gpd
 from tqdm import tqdm
 import requests
 import math
+from ftplib import FTP
+import os
+from datetime import datetime, timedelta
 
 def read_persiann_css_online0(url, nrow, ncol, dtype=np.int16):
     """Downloads, decompresses a Persiann CCS .bin.gz file, converts it to a NumPy array,
@@ -210,3 +213,110 @@ def process_slice(url, nrow, ncol, shape_file, array_list):
         
     array_esm_temp = clip_data(read_persiann_css_online0(url, nrow, ncol), shape_file)
     array_list.append(array_esm_temp)
+
+
+def download_esm_station_data(local_base_folder, ftp_server, username, password):
+    # FTP server details
+    ftp = FTP(ftp_server)
+    ftp.login(username, password)
+
+    # Change to the desired directory
+    ftp.cwd("TEST_ESTACIONES_AUTOMATICAS/H5033/D1/F10")
+
+    # Find the latest date of existing files in the local folder
+    latest_local_date = None
+    for root, dirs, files in os.walk(local_base_folder):
+        for file in files:
+            if file.endswith(".csv"):
+                file_date = datetime.strptime(file[:8], "%Y%m%d").date()
+                if latest_local_date is None or file_date > latest_local_date:
+                    latest_local_date = file_date
+
+    # List all the files and folders in the current directory
+    files_and_folders = ftp.nlst()
+
+    # Filter out the folders starting with "yd"
+    yd_folders = [folder for folder in files_and_folders if folder.startswith("yd")]
+
+    for yd_folder in yd_folders:
+        # Extract the year from the "yd" folder name
+        yd_year = int(yd_folder[2:])
+        
+        # Check if the "yd" folder contains CSV files later than the latest local date
+        if latest_local_date is None or yd_year >= latest_local_date.year:
+            # Change to the "yd" folder
+            ftp.cwd(yd_folder)
+            files_and_folders = ftp.nlst()
+            
+            # Filter out the folders starting with "md"
+            md_folders = [folder for folder in files_and_folders if folder.startswith("md")]
+            
+            for md_folder in md_folders:
+                # Extract the year and month from the "md" folder name
+                md_year = int(md_folder[2:6])
+                md_month = int(md_folder[6:])
+                
+                # Check if the "md" folder contains CSV files later than the latest local date
+                if latest_local_date is None or (md_year, md_month) >= (latest_local_date.year, latest_local_date.month):
+                    # Change to the "md" folder
+                    ftp.cwd(md_folder)
+                    
+                    # List all the CSV files in the current folder
+                    csv_files = [file for file in ftp.nlst() if file.endswith(".csv")]
+                    
+                    for csv_file in csv_files:
+                        # Extract the date from the CSV file name
+                        file_date = datetime.strptime(csv_file[:8], "%Y%m%d").date()
+                        
+                        # Set the specific time to be 23:55 of the file date
+                        specific_datetime = datetime.combine(file_date, datetime.strptime("23:55", "%H:%M").time())
+                        
+                        # Add one day to the specific time
+                        specific_datetime += timedelta(days=1)
+                        
+                        # Get the last modified time of the CSV file
+                        last_modified_time = ftp.voidcmd(f"MDTM {csv_file}")[4:].strip()
+                        last_modified_datetime = datetime.strptime(last_modified_time, "%Y%m%d%H%M%S")
+                        
+                        # Check if the last modified time is later than the specific time
+                        if last_modified_datetime >= specific_datetime:
+                            # Create the year and month folders if they don't exist
+                            local_year_folder = os.path.join(local_base_folder, yd_folder)
+                            local_month_folder = os.path.join(local_year_folder, md_folder)
+                            os.makedirs(local_month_folder, exist_ok=True)
+                            
+                            # Check if the corresponding CSV file already exists
+                            local_file_path = os.path.join(local_month_folder, csv_file)
+                            if not os.path.exists(local_file_path):
+                                # Download the CSV file to the local month folder
+                                with open(local_file_path, "wb") as file:
+                                    # Use FTP's RETR command to download the file
+                                    ftp.retrbinary(f"RETR {csv_file}", file.write)
+                                print(f"Downloaded {csv_file} to {local_month_folder}")
+                        else:
+                            print(f"Last modified time of {csv_file}: {last_modified_datetime} is not later than {specific_datetime}. Collection of sensor data unfinished. Skipping download.")
+                    
+                    ftp.cwd("..")  # Go back to the parent directory
+            
+            ftp.cwd("..")  # Go back to the parent directory
+    ftp.quit()
+    return file_date
+
+
+
+import requests
+
+def download_file_from_onedrive(url, output_path):
+    # Send a GET request to the OneDrive URL
+    response = requests.get(url, stream=True)
+    
+    # Check if the request was successful
+    if response.status_code == 200:
+        # Open the output file in binary write mode
+        with open(output_path, 'wb') as file:
+            # Write the content to the file in chunks
+            for chunk in response.iter_content(chunk_size=8192):
+                file.write(chunk)
+        print(f"File downloaded successfully to {output_path}")
+    else:
+        print(f"Failed to download file. Status code: {response.status_code}")

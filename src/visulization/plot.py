@@ -52,7 +52,8 @@ def plot_fitting_result(y_train, y_train_pred, dates_train, y_test, y_test_pred,
 
   # Create plot for testing data (similar structure to training data plot)
   fig_test = go.Figure()
-  # ... (similar code as training data plot)
+  fig_test.add_trace(go.Scatter(x=test_data['Date'], y=test_data['Observed'], mode='lines', name='Observed'))
+  fig_test.add_trace(go.Scatter(x=test_data['Date'], y=test_data['Simulated'], mode='lines', name='Simulated'))
   fig_test.update_layout(
     title=f"Testing Period: Observed vs. Simulated Discharge\nNSE: {nse_test:.2f}, MSE: {mse_test:.2f}, KGE: {kge_test:.2f}, Features: {X_train.shape[1]}",
     xaxis_title='Date',
@@ -64,6 +65,7 @@ def plot_fitting_result(y_train, y_train_pred, dates_train, y_test, y_test_pred,
   # Display the plots
   fig_train.show()
   fig_test.show()
+  print(f"Number of training samples: {len(y_train)}")
 
 
 def plot_feature_importance(X_train, model):

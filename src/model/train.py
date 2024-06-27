@@ -2,7 +2,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import make_scorer, mean_squared_error
-from src.models.score import nse, kge
+from src.model.score import nse, kge
 
 
 def prepare_data(df_merged, train_size, column_y):
