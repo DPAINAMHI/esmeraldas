@@ -36,61 +36,30 @@ This brings more variation to the structure of the feature matrix to be with pre
 
 The training of the model is rather straightforward. We will first add some new features based on the existing features. For the target indicator to predict, namely the river level at San Mateo, we will compute its rolling average of 3 periods and also include 5 lags of it.
 
-After all the restrcuturing and expansion of the feature, we apply random forest as the primary model given its computational economy. In teh future, the determination of all hyper-parameters should be reconsidered and better apply grid-search method to fianalize it.
+After all the restrcuturing and expansion of the feature, we apply random forest as the primary model given its computational economy. In the future, the determination of all hyper-parameters should be reconsidered and better apply grid-search method to fianalize it.
 
 # Prediction Workflow
 
+The prediction is simply to input prepared features of the future into the trained model to produce the output. However, the obstacal is with the prepration of the dynamically updating features.
 
+Unlike the static historical data, the updating of the features is dynamic. We have to access them every 3 hours with 3 different sources.Using the three functions to update the features of the CCS, WRF and sensors at Esmeraldas seperaetly, we run them every 3 hours to get the most recent update of the features to input.
 
+The dynamic updating timeframe of different sources of data is rather tricky. First the WRF data will update 1 day ahead. Since it's a prediction of 3 days, we will use the most recent prediction of the precipitation data of all the pixels within the Esmeraldas river basin. And the most recent lag data (i.e. lag 1) from the sensors deployed in Esmeraldas stations will update within 30 minutes after the actual time, that is to say the lag 1 data of the sensor will be available 2.5 hours ahead of the time to predict. Lastly, the update time of the CCS data from its data portal is the most unstable. But most likely it will update 1.5 hours ahead of the target timestamp to predict.
 
+After running the trunk of code to fetch different dynamic features every 3 hours, we consolidate those features (be aware that some of the features might be its own lag) into a feature array and pass it to the pre-trained model, in which way we generate our result of the prediction.
 
+# Future To-dos
+## Underlying progress
 
+- Replace the static hyper-parameter of the model training with grid-search results
+- Complete the storage transfering of the wrf historical static data from the local to the cldou site
+- Finish the prediction workflow
+    - Find the reliable portal of fetching the WRF data stably and dynamically
+    - Enable the auto-downloading and cleansing of the WRF data
+- Figure out the unified updating timeframe of the dynamic features
+- Documentation and transmission of the prediction result to the existing information system
 
+## Potential improvement
 
-
-
-# Data Preparation
-## CCS Data
-PERSIANN-Cloud Classification System (PERSIANN-CCS) is a real-time global high resolution (0.04° x 0.04° or 4km x 4km;) satellite precipitation product developed by the Center for Hydrometeorology and Remote Sensing (CHRS) at the University of California, Irvine (UCI)
-
-There are 2 parts of the CCS data:
-- Static historical data: Download mannually from the UCI data portal with a pre-clipped form in the `.nc` format
-- Most recent data to be updated: To track and update the most recent updated data using a python script automatically
-
-With the combination of these 2 sources of data, we formulate the dataset preparation.
-
-## Esmeraldas Sensor Data
-Except for the satellite CCS data, we also adopt local data from the sensors deployed in the Esmeraldas. The sensored data comes from two stations and are updated through the FTP system by CAE.
-The station-sensor structure is as follows:
-- Autoridad Portuaria, Estación A - Muelle 1 (`m1`), Code: 945700
-    - Sensor de nivel de agua, 78652, Hydrometric level, `hidro_level_m1`
-- San Mateo (`sm`), Estación B, Code: 945800
-    - Sensor de nivel de agua, 78694, Hydrometric level, `hidro_level_sm`
-    - Sensor de precipitación, 78656, precipitación acumulada, `precip_acumu_sm`
-
-AS shown above, different variable name was assigned to the data coming from each sensor. Those variable names are also in accordance with the `colnames` of the final output `pd.dataframe`.
-Right now, we have the data from the FTP system ranging from `20230906` to `20240308`
-
-## WRF Data
-TBD
-
-# Input
-## Read the historical CCS data
-In the main jupyter notebook, to read the historical data, first we will have to specify the frequency of the CCS data we used. By default, we will use the 3-hour frequency, namely `freq = 3`.
-Next, we will have to specify the relative path of the folder where the data is located. Note that we will get the current directory of the jupyter notebook and return to the root folder of this project where also the relative path of the data is based on.
-Thus if you wanna use the data with a different frequncy, except for changing the input of the frequency, you will also have to download the historical data in advance and change the relative path accordingly if necessary.
-## Read the historical Esmeraldas sensor data
-The input of the code for reading the historical Esmeraldas sensor data is just the start and end date specifying the time range of the data.
-
-# Output
-## Output of the CCS clipped data
-The downloaded CCS data is pre-clipped, namely consisting of only the pixels of the esmeraldas river basin.
-According to the prescribed information associated with the downloaded data, the shape of the Esmeraldas river basin is $53\times52$. As part of the processing of the data, we flatted the data to be 1-dimensional and drop all the null pixels outside the actual basin shape. As the result, the net output shape of the CCS clipped data is $1\times 1098$.
-## Output of the Esmeldas sensor data
-Since there are only 3 available sensors deployed in the Esmeraldas area, the output shape is simply three columns with each indicating the time series data from 3 sensors with the exception from the date 2023/10/4 to 2023/10/21 when there is only one sensor working properly, which is the `hidro_level_m1`.
-And as of 2024/3/26, the data from 2023/09/01 to 2023/09/05 is still missing.
-Note that the orginal frequency of these 3 time series is 1 minute or 5 minutes. To be compatible with main CCS data, we aggregate/pivot the time series to change its frequency to be 3 hours. For the precipitaion data, the aggregation method is `diff`, namely get the difference between the observation of the last and first timestamps in the unit time. For the water level data, the aggregation method is averaging.
-The names of the aggregated columns are `hidro_level_m1`， `precip_acumu_sm`, `hidro_level_sm` accordingly indicating the average water level of Estación A - Muelle 1, precipitación acumulada of Estación B San Mateo and average water level of Estación B San Mateo.
-## Final merged data
-The output of the above acquiry of historical data is simply two sperate dataframes. To formulate the general dataset for further forecasting, we merge these two timestamp-indexed based on the timestamp of each row. Hence the output overall dataframe consists of $1098+3=1102$ columns.
-Due to the different available time range of these data sources and the outter way of merging, the merged dataset is quite staggered, i.e. the number of available rows containing all non-null data is limited.
+- Further analysis of the prediction result and the corresponding push notifications of alerts once the prediction exceeds the threshold
+- Inclusion of more types of input data to consolidate the features
