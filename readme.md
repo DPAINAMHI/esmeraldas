@@ -1,6 +1,53 @@
 # Introduction
 
-This project is comprised of a main jupyter notebook `CCS_load_data.ipynb` and supporting functions composed in `funct.py` and `download_func.py`. 
+## Project background
+This project is part of the AdaptaClima prjoect trying to Fortify Climate Resilience in Ecuador's Coastal Cities through Empowering National Meteorological and Hydrological Services. It's a collaboration between INMAHI and UNDP.
+
+## Project structure
+This project is comprised of 4 parts, namely 4 folders including `data`, `models`, `notebooks` and `src`
+
+- `data` folder contains all the raw data file generated during the running of all the scripts.
+
+- `models` folder contains the prepared model after training and testing.
+
+- `notebooks` is where all the runnable scripts are stored.
+
+- `src` contains all the wrapped functions.
+
+# Data Input and Processing
+
+This project applies external satellite cloud image data due to lack of local data from the sensor stations. Therefore, before setting up the model and conduct the training process, we have to acquire all the input data from 3 different sources. This process is mainly implemented by the `data.ipynb` file.
+
+PERSIANN-CCS is the first source of data we considered. It's a rainfall estimation dataset based on satellite infrared images of cloud-patchs operated by UC Irvine. With an update frequency of every 3 hours, we are able to downlaod the concatenated historical dataset from its data portal. The downloaded historical dataset is already saved locally in the `data` folder. In the `data.ipynb` notebook, we use the relative path to ensure it will be read correctly.
+
+We also include WRF to expand the diversity of the input satellite cloud image data. The historical dataset is prepared and provided by INAMHI. It has a higher resolution thus it comes with a larger file size of the original historical data. For more flexible and prompt transmission, we are trying to relocate the historical dataset from local folder to the cloud. In this way, the historical dataset of WRF will be downloaded from the cloud and be temporarily stored in the memory instead of the hard disk.
+
+Besides the external cloud image data, we still have some reliable sensors deployed already in the Esmeraldas river basin. although the number of sensors is limited, they will still enrich the perspectives of the input to increase the robustness of the model.
+
+For the ease of data storage and trabsmission, the data of the sensors deployed in Esmeraldas city could be accessed through the `FTP` system. Using the server address, username and password written in the script, we can access the data which updates every 30 minutes with 3 different sensors (1 river level sensor and 1 precipitation sensor deployed at San Mateo and 1 river level sensor at the port).
+
+After we finish the preparation of the forementioned data from 3 different sources, we can now unify the frequency of these datasets and merge them together for the next step. The prepared data will also be saved locally in `data/processed` to improve the efficiency of other code execution.
+
+# Modeling and Training
+
+The other thing we have to consider is the different arrival time form the precipitation in different pixels to the target point of the river level. Due to the different hydrological distance from different pixels, we have to include the precipitation of different pixels with different lag time. The rationale behind is that we think the further where the precipitation is, the later it will affect the river level of the downstream. 
+
+This brings more variation to the structure of the feature matrix to be with precipitation data of different time in the same row, namely, we use different lags of the precipitation of all the pixels as the features to train the model. Practically, we divide the pixels into 10 different groups base on their distance to the river level sensor at San Mateo. The same record of the river level from the sensor is in accordance with precipitation data of 10 different timestamps.
+
+The training of the model is rather straightforward. We will first add some new features based on the existing features. For the target indicator to predict, namely the river level at San Mateo, we will compute its rolling average of 3 periods and also include 5 lags of it.
+
+After all the restrcuturing and expansion of the feature, we apply random forest as the primary model given its computational economy. In teh future, the determination of all hyper-parameters should be reconsidered and better apply grid-search method to fianalize it.
+
+# Prediction Workflow
+
+
+
+
+
+
+
+
+
 
 # Data Preparation
 ## CCS Data
